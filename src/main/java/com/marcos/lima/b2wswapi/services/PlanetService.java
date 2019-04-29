@@ -29,14 +29,8 @@ public class PlanetService {
     }
 
     public Flux<PlanetDTO> getPlanets(String name){
-        return Optional.ofNullable(name)
-                .map(this::findByName)
-                .orElse(this.findAll());
-    }
-
-    private Flux<PlanetDTO> findAll(){
-        return this.planetRepository.findAll()
-                .flatMap(this::combinePlanetsAndFilms);
+		String nameOpt = Optional.ofNullable(name).orElse("");
+		return this.findByName(nameOpt);
     }
 
     private Flux<PlanetDTO> findByName(String name){
