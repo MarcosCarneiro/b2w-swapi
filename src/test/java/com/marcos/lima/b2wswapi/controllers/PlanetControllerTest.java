@@ -52,6 +52,19 @@ public class PlanetControllerTest {
                 .expectStatus().isNotFound();
     }
 
+	@Test
+	public void testGetPlanetByNameShouldBeOk() {
+		PlanetDTO planet = new PlanetDTO("123abc", "Dagobah", "climate", "terrain", 1);
+
+		given(this.planetService.getPlanets("Dagobah")).willReturn(Flux.just(planet));
+
+		this.client.get().uri("/planets?name=Dagobah")
+				.accept(MediaType.APPLICATION_STREAM_JSON).exchange().expectStatus()
+				.isOk().expectHeader()
+				.contentTypeCompatibleWith(MediaType.APPLICATION_STREAM_JSON)
+				.expectBodyList(PlanetDTO.class).hasSize(1);
+	}
+
     @Test
     public void testPostPlanetShouldReturnCreate(){
         Planet planet = new Planet("123abc", "Dagobah", "climate", "terrain");
@@ -74,8 +87,8 @@ public class PlanetControllerTest {
         planet.setClimate("climate");
 
         this.client.post().uri("/planets")
-                .body(BodyInserters.fromObject(planet))
-                .exchange().expectStatus().isBadRequest();
+				.body(BodyInserters.fromObject(planet)).exchange().expectStatus()
+				.isBadRequest();
     }
 
     @Test
@@ -85,6 +98,31 @@ public class PlanetControllerTest {
         this.client.delete().uri("/planets/123abc").exchange()
                 .expectStatus().isNoContent();
     }
+
+	@Test
+	public void testUpdatePlanetShouldReturnOk() {
+		Planet planet = new Planet("123abc", "Dagobah", "climate", "terrain");
+		Planet editedPlanet = new Planet("123abc", "Dagobah", "climate edited",
+				"terrain edited");
+
+		given(this.planetService.update(planet)).willReturn(Mono.just(editedPlanet));
+
+		this.client.put().uri("/planets/123abc").body(BodyInserters.fromObject(planet))
+				.exchange().expectStatus().isOk().expectBody().jsonPath("$.id")
+				.isEqualTo("123abc").jsonPath("$.name").isEqualTo("Dagobah")
+				.jsonPath("$.climate").isEqualTo("climate edited").jsonPath("$.terrain")
+				.isEqualTo("terrain edited");
+	}
+
+	@Test
+	public void testUpdateInvalidPlanetShouldReturnNotFound() {
+		Planet planet = new Planet("102030axbyzc", "Dagobah", "climate", "terrain");
+
+		given(this.planetService.update(planet)).willReturn(Mono.empty());
+
+        this.client.put().uri("planets/102030axbyzc").body(BodyInserters.fromObject(planet))
+				.exchange().expectStatus().isNotFound();
+	}
 
     @Test
     public void testGetAllPlanetsShouldBeOk(){
